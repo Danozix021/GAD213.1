@@ -21,6 +21,12 @@ public class Player : MonoBehaviour
         {
             SceneManager.LoadScene(0);
         }
-     
+        if (collision.gameObject.CompareTag("Finish"))
+        {
+            SceneManager.LoadScene(0);
+            // Planning to lead next level in the future
+        }
+
+
     }
 }

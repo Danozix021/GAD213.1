@@ -48,7 +48,7 @@ public class CameraFollow : MonoBehaviour
     {
         if (target == null) return;
 
-        Vector3 desiredPosition = CalculateDesiredPosition();
+        Vector3 desiredPosition = CalculatePosition();
 
         if (useSmoothDamping)
         {
@@ -61,7 +61,7 @@ public class CameraFollow : MonoBehaviour
         }
     }
 
-    private Vector3 CalculateDesiredPosition()
+    private Vector3 CalculatePosition()
     {
         Vector3 targetPosition = target.position;
         Vector3 currentPosition = transform.position;
