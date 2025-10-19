@@ -12,14 +12,23 @@ public class PlayerMovementController : MonoBehaviour
 
     [Header("Jump Settings")]
     public float jumpForce = 12f;
+    public float jumpHoldForce = 8f;
+    public float jumpHoldDuration = 0.3f;
+    public float jumpCutMultiplier = 0.5f;
     public LayerMask groundLayerMask = 1;
-    public float groundCheckDistance = 0.1f;
+
+    [Header("Ground Check")]
+    public Vector2 groundCheckOffset = new Vector2(0f, -0.5f);
+    public float groundCheckRadius = 0.2f;
 
     private Rigidbody2D rb;
     private Vector2 movementInput;
     private bool isJumping;
+    private bool isJumpButtonHeld;
+    private float jumpHoldTime;
     private bool isBraking;
     private bool isGrounded;
+    private bool wasGrounded;
     private PlayerInput playerInput;
     private InputAction moveAction;
     private InputAction jumpAction;
@@ -70,6 +79,7 @@ public class PlayerMovementController : MonoBehaviour
         CheckGrounded();
         ReadMovementInput();
         HandleMovement();
+        HandleJumpHold();
     }
 
     private void ReadMovementInput()
@@ -101,11 +111,29 @@ public class PlayerMovementController : MonoBehaviour
         rb.linearVelocity = new Vector2(targetVelocityX, rb.linearVelocity.y);
     }
 
+    private void HandleJumpHold()
+    {
+        if (isJumpButtonHeld && isJumping && jumpHoldTime < jumpHoldDuration)
+        {
+            jumpHoldTime += Time.deltaTime;
+
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y + (jumpHoldForce * Time.deltaTime));
+        }
+    }
+
     private void CheckGrounded()
     {
-        Vector2 raycastOrigin = (Vector2)transform.position + Vector2.down * 0.5f;
-        RaycastHit2D hit = Physics2D.Raycast(raycastOrigin, Vector2.down, groundCheckDistance, groundLayerMask);
-        isGrounded = hit.collider != null;
+        wasGrounded = isGrounded;
+
+        Vector2 checkPosition = (Vector2)transform.position + groundCheckOffset;
+        Collider2D groundCollider = Physics2D.OverlapCircle(checkPosition, groundCheckRadius, groundLayerMask);
+        isGrounded = groundCollider != null;
+
+        if (isGrounded && !wasGrounded && rb.linearVelocity.y <= 0)
+        {
+            isJumping = false;
+            jumpHoldTime = 0f;
+        }
     }
 
     private void PerformJump()
@@ -115,6 +143,8 @@ public class PlayerMovementController : MonoBehaviour
             Vector2 jumpVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
             rb.linearVelocity = jumpVelocity;
             isJumping = true;
+            isJumpButtonHeld = true;
+            jumpHoldTime = 0f;
         }
     }
 
@@ -125,7 +155,12 @@ public class PlayerMovementController : MonoBehaviour
 
     private void OnJumpCanceled(InputAction.CallbackContext context)
     {
-        isJumping = false;
+        isJumpButtonHeld = false;
+
+        if (isJumping && rb.linearVelocity.y > 0)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * jumpCutMultiplier);
+        }
     }
 
     private void OnBrakePressed(InputAction.CallbackContext context)
@@ -136,5 +171,12 @@ public class PlayerMovementController : MonoBehaviour
     private void OnBrakeReleased(InputAction.CallbackContext context)
     {
         isBraking = false;
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Vector2 checkPosition = (Vector2)transform.position + groundCheckOffset;
+        Gizmos.color = isGrounded ? Color.green : Color.red;
+        Gizmos.DrawWireSphere(checkPosition, groundCheckRadius);
     }
 }
