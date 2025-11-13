@@ -16,6 +16,8 @@ public class PlayerMovementController : MonoBehaviour
     public float jumpHoldDuration = 0.3f;
     public float jumpCutMultiplier = 0.5f;
     public LayerMask groundLayerMask = 1;
+    public int maxAirJumps = 0;
+    public int airJumpsUsed = 0;
 
     [Header("Ground Check")]
     public Vector2 groundCheckOffset = new Vector2(0f, -0.5f);
@@ -23,11 +25,11 @@ public class PlayerMovementController : MonoBehaviour
 
     private Rigidbody2D rb;
     private Vector2 movementInput;
-    private bool isJumping;
+    public bool isJumping;
     private bool isJumpButtonHeld;
     private float jumpHoldTime;
     private bool isBraking;
-    private bool isGrounded;
+    public bool isGrounded;
     private bool wasGrounded;
     private PlayerInput playerInput;
     private InputAction moveAction;
@@ -133,6 +135,8 @@ public class PlayerMovementController : MonoBehaviour
         {
             isJumping = false;
             jumpHoldTime = 0f;
+            airJumpsUsed = 0;
+            maxAirJumps = 0;
         }
     }
 
@@ -146,6 +150,20 @@ public class PlayerMovementController : MonoBehaviour
             isJumpButtonHeld = true;
             jumpHoldTime = 0f;
         }
+        else if (!isGrounded && airJumpsUsed < maxAirJumps)
+        {
+            airJumpsUsed++;
+            Vector2 jumpVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+            rb.linearVelocity = jumpVelocity;
+            isJumping = true;
+            isJumpButtonHeld = true;
+            jumpHoldTime = 0f;
+        }
+    }
+
+    public void DoubleJump()
+    {
+        maxAirJumps = 1;
     }
 
     private void OnJumpPerformed(InputAction.CallbackContext context)
